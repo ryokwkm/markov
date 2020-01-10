@@ -6,10 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
-	"github.com/kr/pretty"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/ikawaha/kagome/tokenizer"
@@ -49,7 +45,7 @@ func (h Markov) SetLength(i int) *Markov {
 func (h Markov) makeMarkovDict(l []string) map[string][]string {
 	s := strings.Join(l, "\n")
 	// 文章の構成に必要ない文字を削除し文章の終わりと判定
-	s = strings.NewReplacer(" ", "", "\n", "。", "「", "。", "」", "。", "(", "。", ")", "。", "?", "。", "!", "。").Replace(s)
+	s = replaceEndWord(s)
 
 	t := tokenizer.New()
 	morphs := t.Tokenize(s)
@@ -87,8 +83,28 @@ func (h Markov) makeMarkovDict(l []string) map[string][]string {
 		}
 		dict[now] = append(dict[now], next)
 	}
-	h.log.Printf("dict %# v", pretty.Formatter(dict))
+	//h.log.Printf("dict %# v", pretty.Formatter(dict))
 	return dict
+}
+
+func replaceEndWord(s string) string {
+	//文末の文字は 。 に置き換え
+	s = strings.NewReplacer("\n", "。",
+		"」", "。",
+		"』", "。",
+		")", "。",
+		"「", "。",
+		"『", "。",
+		"(", "。",
+		//終端扱いにするが消さない
+		"?", "?。",
+		"!", "!。",
+	).Replace(s)
+
+	//終わりでない文字は消す
+	s = strings.NewReplacer(" ", "").Replace(s)
+
+	return s
 }
 
 //MakeWord 辞書を元にマルコフ連鎖して文章を作る。
@@ -98,12 +114,10 @@ func (h Markov) MakeWord() string {
 	for i := 0; i <= h.retryCount; i++ {
 		s := int64(time.Now().Nanosecond())
 		line = h.makeWord(s)
-		h.log.Printf("%#v %#v  %#v", math.Abs(float64(len(rtn)-h.betterLen)), math.Abs(float64(len(line)-h.betterLen)), line)
 		if math.Abs(float64(len(rtn)-h.betterLen)) > math.Abs(float64(len(line)-h.betterLen)) {
 			rtn = line
 		}
 	}
-	spew.Dump(len(rtn))
 	return rtn
 }
 
