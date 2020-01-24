@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/ikawaha/kagome/tokenizer"
 )
 
@@ -16,21 +14,19 @@ type Markov struct {
 	dict       map[string][]string //基本的に辞書は使い回し
 	betterLen  int                 //どのくらいの長さの文章にしたいか(その長さにするとは言ってない)
 	retryCount int                 //文章の長さを揃えるのに何回試行錯誤するか
-	log        *logrus.Logger
 }
 
 func init() {
 	tokenizer.SysDic()
 }
 
-func NewMarkov(l []string, log *logrus.Logger) *Markov {
+func NewMarkov(l []string) *Markov {
 	//作成する文章の長さを設定
 	const defaultBetterLen = 60
 	const defaultRetryCount = 13
 	ret := Markov{
 		betterLen:  defaultBetterLen,
 		retryCount: defaultRetryCount,
-		log:        log,
 	}
 	ret.dict = ret.makeMarkovDict(l)
 	return &ret
